@@ -16,7 +16,7 @@ import (
 )
 
 func loadKeyFile(c *cli.Context) error {
-	return esp.LoadKeyFile(c.GlobalString("key-file"))
+	return esp.LoadKeyFile(c.String("key-file"))
 }
 
 var streamsCmd = func(c *cli.Context) error {
@@ -24,7 +24,7 @@ var streamsCmd = func(c *cli.Context) error {
 
 	inputFile := c.Args().First()
 
-	if len(c.Args()) <= 0 {
+	if (c.Args == nil) {
 		cli.ShowCommandHelp(c, "streams")
 		return cli.NewExitError("wrong usage for streams", 1)
 	}
@@ -32,7 +32,7 @@ var streamsCmd = func(c *cli.Context) error {
 	rtpReader, err := rtp.NewRtpReader(inputFile)
 
 	if err != nil {
-		return cli.NewMultiError(cli.NewExitError("failed to open file", 1), err)
+		return cli.NewExitError("failed to open file", 1)
 	}
 
 	defer rtpReader.Close()
@@ -68,7 +68,7 @@ var playCmd = func(c *cli.Context) error {
 	rtpReader, err := rtp.NewRtpReader(inputFile)
 
 	if err != nil {
-		return cli.NewMultiError(cli.NewExitError("failed to open file", 1), err)
+		return cli.NewExitError("failed to open file", 1)
 	}
 
 	defer rtpReader.Close()
@@ -91,7 +91,7 @@ var playCmd = func(c *cli.Context) error {
 		console.ListPrompt("Choose RTP Stream", rtpStreamsOptions...))
 
 	if err != nil {
-		return cli.NewMultiError(cli.NewExitError("invalid input", 1), err)
+		return cli.NewExitError("invalid input", 1)
 	}
 	if streamIndex == 0 {
 		fmt.Print("Playing all streams\n\n")
@@ -174,7 +174,7 @@ var dumpCmd = func(c *cli.Context) error {
 	rtpReader, err := rtp.NewRtpReader(inputFile)
 
 	if err != nil {
-		return cli.NewMultiError(cli.NewExitError("failed to open file", 1), err)
+		return cli.NewExitError("failed to open file", 1)
 	}
 
 	defer rtpReader.Close()
@@ -201,7 +201,7 @@ func doInteractiveDump(c *cli.Context, rtpReader *rtp.RtpReader) error {
 		console.ListPrompt("Choose RTP Stream", rtpStreamsOptions...))
 
 	if err != nil {
-		return cli.NewMultiError(cli.NewExitError("invalid input", 1), err)
+		return cli.NewExitError("invalid input", 1)
 	}
 	fmt.Printf("(%-3d) %s\n\n", streamIndex, rtpStreams[streamIndex-1])
 
@@ -215,7 +215,7 @@ func doInteractiveDump(c *cli.Context, rtpReader *rtp.RtpReader) error {
 		console.ListPrompt("Choose codec:", codecList...))
 
 	if err != nil {
-		return cli.NewMultiError(cli.NewExitError("invalid input", 1), err)
+		return cli.NewExitError("invalid input", 1)
 	}
 	fmt.Printf("(%-3d) %s\n\n", codecIndex, codecs.CodecList[codecIndex-1].Name)
 
@@ -235,7 +235,7 @@ func doInteractiveDump(c *cli.Context, rtpReader *rtp.RtpReader) error {
 		}
 
 		if err != nil {
-			return cli.NewMultiError(cli.NewExitError("invalid input", 1), err)
+			return cli.NewExitError("invalid input", 1)
 		}
 		optionsMap[v.Name] = optionValue
 	}
@@ -243,7 +243,7 @@ func doInteractiveDump(c *cli.Context, rtpReader *rtp.RtpReader) error {
 	outputFile, err := console.ExpectAnyString(console.Prompt("Output file: "))
 
 	if err != nil {
-		return cli.NewMultiError(cli.NewExitError("invalid input", 1), err)
+		return cli.NewExitError("invalid input", 1)
 	}
 
 	fmt.Printf("%s\n", outputFile)
@@ -301,7 +301,7 @@ func main() {
      > ^ <
     `
 
-	app.Commands = []cli.Command{
+	app.Commands = []*cli.Command{
 		{
 			Name:      "streams",
 			Aliases:   []string{"s"},
@@ -323,26 +323,20 @@ func main() {
 			ArgsUsage: "[pcap-file]",
 			Action:    playCmd,
 			Flags: []cli.Flag{
-				cli.StringFlag{Name: "host", Value: "localhost", Usage: "destination host for replayed RTP packets"},
-				cli.IntFlag{Name: "port", Value: 1234, Usage: "destination port for replayed RTP packets"},
+				&cli.StringFlag{Name: "host", Value: "localhost", Usage: "destination host for replayed RTP packets"},
+				&cli.IntFlag{Name: "port", Value: 1234, Usage: "destination port for replayed RTP packets"},
 			},
 		},
 		{
 			Name:    "codecs",
 			Aliases: []string{"c"},
 			Usage:   "lists supported codecs information",
-			Subcommands: cli.Commands{
-				cli.Command{
-					Name:      "list",
-					Action:    codecsList,
-					ArgsUsage: "[codec name or empty for all]",
-				},
-			},
+			Action:    codecsList,
 		},
 	}
 
 	app.Flags = []cli.Flag{
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  "key-file, k",
 			Value: "esp-keys.txt",
 			Usage: "Load ipsec keys from `FILE`",
